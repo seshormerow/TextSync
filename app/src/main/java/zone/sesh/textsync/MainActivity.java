@@ -1,6 +1,7 @@
 package zone.sesh.textsync;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -11,13 +12,20 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.lifeofcoding.cacheutlislibrary.CacheUtils;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,8 +37,8 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<HashMap<String, String>> smsList = new ArrayList<HashMap<String, String>>();
     ArrayList<HashMap<String, String>> tmpList = new ArrayList<HashMap<String, String>>();
     static MainActivity inst;
-    //Loadsms loadsmsTask; // Object from another class TODO: make this object
-    //InboxAdapter adapter, tmadapter;; // Object from another class TODO: make this object
+    LoadSms loadsmsTask;
+    InboxAdapter adapter, tmadapter;; // Object from another class TODO: make this object
     FloatingActionButton fab_new;
     ProgressBar loader;
     ListView conversations;
@@ -59,6 +67,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void init() {
         Toast.makeText(this, "owo", Toast.LENGTH_SHORT).show();
+        smsList.clear();
+        try{
+            tmpList = (ArrayList<HashMap<String, String>>)Function.readCachedFIle(MainActivity.this, "TextSync");
+            //tmpadapter = new InboxAdapter(MainActivity.this, tmpList); //TODO: Finish InboxAdapter class.
+        }catch(Exception e) {}
     }
 
     @Override
@@ -70,9 +83,14 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_KEY);
         }else{
             init();
-            //loadsmsTask = new LOadSms();
-            //loadsmsTask.execute();
+            loadsmsTask = new LoadSms();
+            loadsmsTask.execute();
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
     }
 
     @Override
@@ -82,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
             case REQUEST_PERMISSION_KEY: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     init();
-                    //loadsmsTask = new LoadSms();
-                    //loadsmsTask.execute();
+                    loadsmsTask = new LoadSms();
+                    loadsmsTask.execute();
                 }else{
                     Toast.makeText(MainActivity.this, "You must accept permissions.", Toast.LENGTH_LONG).show();
                 }
@@ -116,24 +134,67 @@ public class MainActivity extends AppCompatActivity {
                         String _id = c.getString(c.getColumnIndexOrThrow("_id"));
                         String thread_id = c.getString(c.getColumnIndexOrThrow("thread_id"));
                         String msg = c.getString(c.getColumnIndexOrThrow("body"));
-                        String type = c.getString(c.getColumnIndexOrThrow({"type"));
+                        String type = c.getString(c.getColumnIndexOrThrow("type"));
                         String timestamp = c.getString(c.getColumnIndexOrThrow("date"));
                         phone = c.getString(c.getColumnIndexOrThrow("address"));
 
                         name = CacheUtils.readFile(thread_id);
-                        if (name == null){
+                        if (name == null) {
                             name = Function.getContactbyPhoneNumber(getApplicationContext(), c.getString(c.getColumnIndexOrThrow("address")));
                             CacheUtils.writeFile(thread_id, name);
                         }
 
-                        smsList.add(Function.mappingInbox(_id, thread_id, name, phone msg, type, timestamp)
+                        //smsList.add(Function.mappingInbox(_id, thread_id, name, phone msg, type, timestamp) //TODO: Finish up this try statement and continue in the tutorial for this method and class
                     }
                 }
-            }catch{ (IllegalArgumentException e)
+            }catch (IllegalArgumentException e) {
                 // TODO: Auto-generated catch block
                 e.printStackTrace();
             }
+            return xml;
         }
+    }
+
+    class InboxAdapter extends BaseAdapter {
+        private Activity activity;
+        private ArrayList<HashMap<String, String>> data;
+
+        public InboxAdapter(Activity a, ArrayList<HashMap<String, String>> d) {
+            activity = a;
+            data = d;
+        }
+
+        public int getCount() {
+            return data.size();
+        }
+
+        public Object getItem(int position) {
+            return position;
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView (int position, View convertView, ViewGroup parent) {
+            InboxViewHolder holder = null;
+            if (convertView == null) {
+                holder = new InboxViewHolder();
+                convertView = LayoutInflater.from(activity).inflate(R.layout.conversation_list_item, parent, false);
+                holder.inbox_thumb = (ImageView) convertView.findViewById(R.id.inbox_thumb);
+                holder.inbox_user = (TextView) convertView.findViewById(R.id.inbox_user);
+                holder.inbox_msg = (TextView) convertView.findViewById(R.id.inbox_msg);
+                holder.inbox_date = (TextView) convertView.findViewById(R.id.inbox_date);
+                //TODO: Add these things above to the xml for message views.
+                convertView.setTag(holder);
+                //TODO: Finish the rest of this method from the tutorial.
+            }
+        }
+    }
+
+    class InboxViewHolder {
+        ImageView inbox_thumb;
+        TextView inbox_user, inbox_msg, inbox_date;
     }
 
 

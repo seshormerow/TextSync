@@ -8,6 +8,10 @@ import android.os.Build;
 import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 public class Function {
     public static boolean hasPermissions(Context context, String... permissions) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
@@ -37,5 +41,11 @@ public class Function {
             }
             return name;
         }
+    }
+    public static Object readCachedFIle (Context context, String key) throws IOException, ClassNotFoundException {
+        FileInputStream fis = context.openFileInput(key);
+        ObjectInputStream ois = new ObjectInputStream(fis);
+        Object object = ois.readObject();
+        return object;
     }
 }
